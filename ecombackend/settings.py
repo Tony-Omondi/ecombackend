@@ -27,6 +27,8 @@ INSTALLED_APPS = [
     'dj_rest_auth',
     'social_django',  # For Google Sign-In
     'accounts',  # Custom app
+    'products',
+    'orders',
 ]
 
 MIDDLEWARE = [
@@ -138,12 +140,17 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'nitonito598@gmail.com'
 EMAIL_HOST_PASSWORD = 'ouuippiqxvunrffy'  # Gmail App Password
 DEFAULT_FROM_EMAIL = 'nitonito598@gmail.com'
+PAYSTACK_TEST_SECRET_KEY = 'ysk_test_2a6d9252851568d2e63aeb75f410bb7818406df4'  # Replace with your actual key
+PAYSTACK_TEST_PUBLIC_KEY = 'pk_test_8828b6bb8d73d4e01fcc2a659b0979b809500bc2'  # Replace with your actual key
+PAYSTACK_INITIALIZE_URL = 'https://api.paystack.co/transaction/initialize'
+PAYSTACK_VERIFY_URL = 'https://api.paystack.co/transaction/verify/'
+
 
 # Social auth settings (Google OAuth2)
 AUTHENTICATION_BACKENDS = (
     'social_core.backends.google.GoogleOAuth2',
     'django.contrib.auth.backends.ModelBackend',
 )
-SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = '532809781253-39iuhvpkej6b2s3i17aqeiukrfl324el.apps.googleusercontent.com'
-SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = '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'
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = '134348066560-05ustg001j5oi1m231mag5ofjellij40.apps.googleusercontent.com'
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = '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'
 SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = ['email', 'profile']

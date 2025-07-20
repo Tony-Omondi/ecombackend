@@ -11,4 +11,7 @@ urlpatterns = [
     path('api/accounts/', include('accounts.urls')),  # Include accounts app URLs
     path('api/auth/', include('dj_rest_auth.urls')),
     path('api/auth/social/', include('social_django.urls', namespace='social')),
+    path('api/products/', include('products.urls')),  # Add products app
+    path('api/orders/', include('orders.urls')),  # Add products app
+
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

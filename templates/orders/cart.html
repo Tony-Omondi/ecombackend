@@ -1,0 +1,175 @@
+{% extends "base/base.html" %}
+{% block title %}Shopping Cart{% endblock %}
+{% load static %}
+
+{% block start %}
+<style>
+  :root {
+    --border-radius: 8px;
+    --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    --transition: all 0.3s ease;
+  }
+  body {
+    font-family: 'Poppins', Arial, sans-serif;
+    background-color: #f8f9fa;
+  }
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 15px;
+  }
+  .card {
+    border: none;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+  }
+  .btn-primary {
+    background-color: #007bff;
+    border-radius: 50px;
+    padding: 0.75rem 1.5rem;
+  }
+  .btn-loading {
+    pointer-events: none;
+    opacity: 0.7;
+  }
+</style>
+
+<section class="section-content padding-y">
+  <div class="container">
+    <div class="row">
+      <main class="col-lg-8 col-md-12">
+        <div class="card shadow-sm">
+          <div class="card-header bg-white">
+            <h4>Your Cart</h4>
+          </div>
+          <div class="card-body p-0">
+            <div class="list-group list-group-flush" id="cart-items">
+              <!-- Populated by JavaScript -->
+            </div>
+          </div>
+        </div>
+      </main>
+      <aside class="col-lg-4 col-md-12 mt-4 mt-lg-0">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h5>Apply Coupon</h5>
+            <form id="coupon-form">
+              {% csrf_token %}
+              <input type="text" class="form-control" name="coupon_code" placeholder="Enter code">
+              <button type="submit" class="btn btn-primary mt-2">Apply</button>
+            </form>
+            <div id="coupon-message"></div>
+            <h5 class="mt-3">Order Summary</h5>
+            <dl class="row">
+              <dt class="col-6">Subtotal:</dt>
+              <dd class="col-6 text-end" id="cart-subtotal">KSh 0.00</dd>
+              <dt class="col-6">Discount:</dt>
+              <dd class="col-6 text-end" id="cart-discount">KSh 0.00</dd>
+              <dt class="col-6">Total:</dt>
+              <dd class="col-6 text-end" id="cart-total">KSh 0.00</dd>
+            </dl>
+            <button id="paystack-button" class="btn btn-primary w-100">Proceed to Checkout</button>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<script src="https://js.paystack.co/v1/inline.js"></script>
+<script>
+  async function fetchCart() {
+    const response = await fetch('/api/orders/cart/', {
+      headers: { 'Authorization': 'Bearer ' + localStorage.getItem('access_token') }
+    });
+    const cart = await response.json();
+    const cartItemsDiv = document.getElementById('cart-items');
+    cartItemsDiv.innerHTML = '';
+    let subtotal = 0;
+    cart[0].cart_items.forEach(item => {
+      subtotal += item.product.price * item.quantity;
+      cartItemsDiv.innerHTML += `
+        <div class="list-group-item">
+          <div class="d-flex">
+            <img src="/media/${item.product.images[0]?.image || 'placeholder.jpg'}" 
+                 style="width: 120px; height: 120px; object-fit: cover;" 
+                 alt="${item.product.name}">
+            <div class="ms-3">
+              <h5>${item.product.name}</h5>
+              <p>Quantity: <input type="number" value="${item.quantity}" min="1" 
+                                 onchange="updateQuantity('${item.id}', this.value)">
+              <p>Price: KSh ${item.product.price}</p>
+              <button onclick="removeItem('${item.id}')">Remove</button>
+            </div>
+          </div>
+        </div>`;
+    });
+    document.getElementById('cart-subtotal').textContent = `KSh ${subtotal.toFixed(2)}`;
+    document.getElementById('cart-discount').textContent = cart[0].coupon ? `KSh ${cart[0].coupon.discount_amount}` : 'KSh 0.00';
+    document.getElementById('cart-total').textContent = `KSh ${cart[0].coupon ? (subtotal - cart[0].coupon.discount_amount).toFixed(2) : subtotal.toFixed(2)}`;
+  }
+
+  async function updateQuantity(itemId, quantity) {
+    await fetch(`/api/orders/cart/items/${itemId}/`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + localStorage.getItem('access_token'),
+        'X-CSRFToken': '{{ csrf_token }}'
+      },
+      body: JSON.stringify({ quantity })
+    });
+    fetchCart();
+  }
+
+  async function removeItem(itemId) {
+    await fetch(`/api/orders/cart/items/${itemId}/`, {
+      method: 'DELETE',
+      headers: { 'Authorization': 'Bearer ' + localStorage.getItem('access_token') }
+    });
+    fetchCart();
+  }
+
+  document.getElementById('coupon-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const couponCode = e.target.coupon_code.value;
+    const response = await fetch('/api/orders/cart/apply-coupon/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + localStorage.getItem('access_token'),
+        'X-CSRFToken': '{{ csrf_token }}'
+      },
+      body: JSON.stringify({ coupon_code: couponCode })
+    });
+    const data = await response.json();
+    document.getElementById('coupon-message').textContent = response.ok ? 'Coupon applied!' : data.error;
+    fetchCart();
+  });
+
+  document.getElementById('paystack-button').addEventListener('click', async (e) => {
+    e.preventDefault();
+    const button = e.target;
+    button.classList.add('btn-loading');
+    button.textContent = 'Please wait, redirecting...';
+    const response = await fetch('/api/orders/payment/initiate/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + localStorage.getItem('access_token'),
+        'X-CSRFToken': '{{ csrf_token }}'
+      }
+    });
+    const data = await response.json();
+    if (data.status && data.authorization_url) {
+      window.location.href = data.authorization_url;
+    } else {
+      button.classList.remove('btn-loading');
+      button.textContent = 'Proceed to Checkout';
+      alert('Error: ' + (data.message || 'Payment initialization failed'));
+    }
+  });
+
+  fetchCart();
+</script>
+{% endblock %}
