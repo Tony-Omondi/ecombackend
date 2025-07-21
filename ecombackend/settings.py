@@ -29,6 +29,9 @@ INSTALLED_APPS = [
     'accounts',  # Custom app
     'products',
     'orders',
+    'adminpanel',
+    'notifications',
+    
 ]
 
 MIDDLEWARE = [

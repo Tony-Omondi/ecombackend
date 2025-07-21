@@ -13,5 +13,7 @@ urlpatterns = [
     path('api/auth/social/', include('social_django.urls', namespace='social')),
     path('api/products/', include('products.urls')),  # Add products app
     path('api/orders/', include('orders.urls')),  # Add products app
+    path('api/adminpanel/', include('adminpanel.urls')),
+    path('api/notifications/', include('notifications.urls')),
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

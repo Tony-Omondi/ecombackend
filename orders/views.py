@@ -7,7 +7,8 @@ from .serializers import CartSerializer, CartItemSerializer, OrderSerializer, Pa
 from products.models import Product, Variant
 import requests
 from django.conf import settings
-import uuid
+from django.core.mail import send_mail
+from notifications.models import Notification
 
 class CartListCreateView(generics.ListCreateAPIView):
     serializer_class = CartSerializer
@@ -195,13 +196,55 @@ class PaymentCallbackView(APIView):
                             item.product.stock -= item.quantity
                             item.product.save()
 
-                    Payment.objects.create(
+                    payment = Payment.objects.create(
                         order=order,
                         amount=order.total_amount,
                         reference=reference,
                         payment_status="completed"
                     )
                     cart.cart_items.all().delete()  # Clear cart
+
+                    # Send order confirmation email
+                    items = OrderItem.objects.filter(order=order)
+                    item_list = "\n".join([f"- {item.product.name} (Qty: {item.quantity}, Price: KSh {item.product_price:.2f})" for item in items])
+                    subject = f"Order Confirmation: {order.order_id}"
+                    message = (
+                        f"Dear {order.user.first_name or order.user.email},\n\n"
+                        f"Thank you for your order!\n\n"
+                        f"Order ID: {order.order_id}\n"
+                        f"Total Amount: KSh {order.total_amount:.2f}\n"
+                        f"Status: {order.status}\n"
+                        f"Payment Status: {order.payment_status}\n"
+                        f"Shipping Address: {order.shipping_address.address}, {order.shipping_address.city}, {order.shipping_address.country}\n"
+                        f"Coupon Applied: {order.coupon.coupon_code if order.coupon else 'None'}\n\n"
+                        f"Items:\n{item_list}\n\n"
+                        f"Thank you for shopping with us!"
+                    )
+
+                    try:
+                        send_mail(
+                            subject=subject,
+                            message=message,
+                            from_email=settings.DEFAULT_FROM_EMAIL,
+                            recipient_list=[order.user.email],
+                            fail_silently=False,
+                        )
+                        status_val = 'sent'
+                        error_message = None
+                    except Exception as e:
+                        status_val = 'failed'
+                        error_message = str(e)
+
+                    Notification.objects.create(
+                        user=order.user,
+                        notification_type='order_confirmation',
+                        order=order,
+                        subject=subject,
+                        message=message,
+                        status=status_val,
+                        error_message=error_message
+                    )
+
                     return Response({"status": True, "order_id": order.order_id}, status=status.HTTP_200_OK)
             
             return Response({"status": False, "message": "Payment verification failed"}, status=status.HTTP_400_BAD_REQUEST)
