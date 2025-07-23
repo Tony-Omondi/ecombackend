@@ -3,6 +3,7 @@ from django.conf import settings
 from products.models import Product, Variant
 from accounts.models import ShippingAddress
 import uuid
+from decimal import Decimal
 
 class Cart(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='carts')
@@ -21,7 +22,7 @@ class Cart(models.Model):
     def get_cart_total_price_after_coupon(self):
         total = self.get_cart_total()
         if self.coupon and not self.coupon.is_expired:
-            return max(total - self.coupon.discount_amount, 0)
+            return max(total - Decimal(self.coupon.discount_amount), Decimal('0.00'))
         return total
 
 class CartItem(models.Model):
@@ -36,8 +37,7 @@ class CartItem(models.Model):
         return f"{self.product.name} ({self.quantity}) in Cart {self.cart.uid}"
 
     def get_total_price(self):
-        price = self.product.price if not self.variant else self.product.price
-        return price * self.quantity
+        return Decimal(self.product.price) * self.quantity
 
 class Order(models.Model):
     STATUS_CHOICES = [

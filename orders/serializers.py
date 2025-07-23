@@ -3,6 +3,7 @@ from .models import Cart, CartItem, Order, OrderItem, Payment, Coupon
 from products.models import Product, Variant
 from accounts.models import ShippingAddress
 from products.serializers import ProductSerializer, VariantSerializer
+from decimal import Decimal
 
 class CouponSerializer(serializers.ModelSerializer):
     class Meta:
@@ -18,6 +19,7 @@ class CartItemSerializer(serializers.ModelSerializer):
     variant_id = serializers.PrimaryKeyRelatedField(
         queryset=Variant.objects.all(), source='variant', write_only=True, required=False
     )
+    cart = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
         model = CartItem
@@ -35,7 +37,7 @@ class CartSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Cart
-        fields = ['id', 'user', 'is_paid', 'coupon', 'coupon_code', 'cart_items', 'created_at', 'updated_at']
+        fields = ['id', 'user', 'is_paid', 'coupon', 'coupon_code', 'cart_items', 'created_at', 'updated_at', 'uid']
 
     def validate_coupon_code(self, value):
         if not value:
@@ -72,10 +74,14 @@ class OrderSerializer(serializers.ModelSerializer):
         queryset=ShippingAddress.objects.all()
     )
     coupon = CouponSerializer(read_only=True)
+    payment_reference = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
-        fields = ['id', 'user', 'order_id', 'shipping_address', 'total_amount', 'coupon', 'payment_status', 'payment_mode', 'status', 'items', 'created_at', 'updated_at']
+        fields = ['id', 'user', 'order_id', 'shipping_address', 'total_amount', 'coupon', 'payment_status', 'payment_mode', 'status', 'items', 'created_at', 'updated_at', 'payment_reference']
+
+    def get_payment_reference(self, obj):
+        return obj.payment.reference if hasattr(obj, 'payment') else None
 
     def validate(self, data):
         user = self.context['request'].user
@@ -86,14 +92,14 @@ class OrderSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         items_data = validated_data.pop('items')
         order = Order.objects.create(**validated_data)
-        total_amount = 0
+        total_amount = Decimal('0.00')
         for item_data in items_data:
-            price = item_data['product'].price if not item_data.get('variant') else item_data['product'].price
+            price = Decimal(item_data['product'].price)
             total_amount += price * item_data['quantity']
             OrderItem.objects.create(order=order, product_price=price, **item_data)
         order.total_amount = total_amount
         if order.coupon and not order.coupon.is_expired:
-            order.total_amount = max(total_amount - order.coupon.discount_amount, 0)
+            order.total_amount = max(total_amount - Decimal(order.coupon.discount_amount), Decimal('0.00'))
         order.save()
         return order
 

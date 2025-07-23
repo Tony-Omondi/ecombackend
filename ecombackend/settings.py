@@ -143,10 +143,26 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'nitonito598@gmail.com'
 EMAIL_HOST_PASSWORD = 'ouuippiqxvunrffy'  # Gmail App Password
 DEFAULT_FROM_EMAIL = 'nitonito598@gmail.com'
-PAYSTACK_TEST_SECRET_KEY = 'ysk_test_2a6d9252851568d2e63aeb75f410bb7818406df4'  # Replace with your actual key
-PAYSTACK_TEST_PUBLIC_KEY = 'pk_test_8828b6bb8d73d4e01fcc2a659b0979b809500bc2'  # Replace with your actual key
+PAYSTACK_TEST_SECRET_KEY = 'sk_live_dbeff6010b7f44412d828fa5120250d281e6283b'  # Replace with your actual key
+PAYSTACK_TEST_PUBLIC_KEY = 'pk_live_9a3bfa00fea6b78a6d3fb3538639083478427257'  # Replace with your actual key
 PAYSTACK_INITIALIZE_URL = 'https://api.paystack.co/transaction/initialize'
 PAYSTACK_VERIFY_URL = 'https://api.paystack.co/transaction/verify/'
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'orders': {
+            'handlers': ['console'],
+            'level': 'INFO',
+        },
+    },
+}
+
 
 
 # Social auth settings (Google OAuth2)
