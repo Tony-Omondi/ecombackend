@@ -1,6 +1,19 @@
 from django.contrib import admin
 from .models import Category, Product, ProductImage, Variant
 
+# Inline for ProductImage
+class ProductImageInline(admin.TabularInline):
+    model = ProductImage
+    extra = 1  # Number of empty forms to display
+    fields = ['image', 'img_preview']
+    readonly_fields = ['img_preview']
+
+# Inline for Variant
+class VariantInline(admin.TabularInline):
+    model = Variant
+    extra = 1  # Number of empty forms to display
+    fields = ['size', 'color', 'stock']
+
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
     list_display = ['name', 'parent']
@@ -11,6 +24,7 @@ class ProductAdmin(admin.ModelAdmin):
     list_display = ['name', 'price', 'category', 'stock', 'sku', 'brand']
     search_fields = ['name', 'sku', 'brand']
     list_filter = ['category', 'brand']
+    inlines = [ProductImageInline, VariantInline]  # Add inlines for ProductImage and Variant
 
 @admin.register(ProductImage)
 class ProductImageAdmin(admin.ModelAdmin):
