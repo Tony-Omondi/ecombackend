@@ -1,19 +1,19 @@
 from rest_framework import generics
 from rest_framework.permissions import AllowAny, IsAdminUser
 from rest_framework.filters import SearchFilter
-from .models import Product, Category
-from .serializers import ProductSerializer, CategorySerializer
+from .models import Product, Category, Banner
+from .serializers import ProductSerializer, CategorySerializer, BannerSerializer
 
 class ProductListCreateView(generics.ListCreateAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
     filter_backends = [SearchFilter]
-    search_fields = ['name', 'sku', 'brand']  # Fields to search against
+    search_fields = ['name', 'sku', 'brand']
 
     def get_permissions(self):
         if self.request.method == 'POST':
             return [IsAdminUser()]
-        return [AllowAny()]  # Public access for listing
+        return [AllowAny()]
 
 class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Product.objects.all()
@@ -22,9 +22,14 @@ class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
     def get_permissions(self):
         if self.request.method in ['PUT', 'PATCH', 'DELETE']:
             return [IsAdminUser()]
-        return [AllowAny()]  # Public access for detail view
+        return [AllowAny()]
 
 class CategoryListView(generics.ListAPIView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    permission_classes = [AllowAny]  # Public access for categories
+    permission_classes = [AllowAny]
+
+class BannerListView(generics.ListAPIView):
+    queryset = Banner.objects.filter(is_active=True)
+    serializer_class = BannerSerializer
+    permission_classes = [AllowAny]

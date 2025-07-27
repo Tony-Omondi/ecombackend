@@ -1,7 +1,6 @@
 from django.db import models
 from django.utils.safestring import mark_safe
 
-
 class Category(models.Model):
     name = models.CharField(max_length=255)
     parent = models.ForeignKey('self', null=True, blank=True, related_name='children', on_delete=models.CASCADE)
@@ -45,3 +44,30 @@ class Variant(models.Model):
 
     def __str__(self):
         return f"{self.product.name} - {self.size or 'No Size'} - {self.color or 'No Color'}"
+
+class Banner(models.Model):
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.title
+
+    class Meta:
+        verbose_name_plural = 'Banners'
+
+class BannerImage(models.Model):
+    banner = models.ForeignKey(Banner, on_delete=models.CASCADE, related_name='images')
+    image = models.ImageField(upload_to='banners')
+    order = models.PositiveIntegerField(default=0)  # For controlling image order in carousel
+
+    def __str__(self):
+        return f"Image for {self.banner.title}"
+
+    def img_preview(self):
+        return mark_safe(f'<img src="{self.image.url}" width="500"/>')
+
+    class Meta:
+        ordering = ['order']  # Order images by 'order' field

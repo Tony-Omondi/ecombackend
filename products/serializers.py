@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Category, Product, ProductImage, Variant
+from .models import Category, Product, ProductImage, Variant, Banner, BannerImage
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -35,3 +35,15 @@ class ProductSerializer(serializers.ModelSerializer):
         if Product.objects.filter(sku=value).exclude(id=self.instance.id if self.instance else None).exists():
             raise serializers.ValidationError('SKU must be unique.')
         return value
+
+class BannerImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BannerImage
+        fields = ['id', 'image', 'order']
+
+class BannerSerializer(serializers.ModelSerializer):
+    images = BannerImageSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Banner
+        fields = ['id', 'title', 'description', 'is_active', 'images', 'created_at', 'updated_at']
