@@ -8,7 +8,7 @@ class ProductListCreateView(generics.ListCreateAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
     filter_backends = [SearchFilter]
-    search_fields = ['name', 'sku', 'brand']
+    search_fields = ['name', 'sku', 'brand', 'category__name']
 
     def get_permissions(self):
         if self.request.method == 'POST':
